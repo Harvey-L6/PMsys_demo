@@ -2,7 +2,7 @@
 
 以 **Google Sheets、Google Apps Script 與 Bootstrap** 建立的專案追蹤系統。管理者透過試算表維護專案與人員資料，專案成員則透過專屬網頁回報進度、管理任務及維護組員清冊。
 
-本 repo 為作品原始碼展示版，展示試算表資料結構、Web App 介面、專案連結與通知流程的整合方式。線上互動示範另行部署；repo 不包含實際試算表、Script Properties 設定值或業務資料。
+本 repo 為作品原始碼展示版，呈現試算表資料結構、Web App 介面、專案連結與通知流程的整合方式。互動操作需自行部署 Apps Script Web App；repo 不包含實際試算表、Script Properties 設定值或業務資料。
 
 ## 專案目的
 
@@ -138,7 +138,7 @@
 
 先建立自己的 Drive 根資料夾並設定 `FolderID`，再將 Apps Script 部署為 Web App，將部署網址填入 `WebURL`。首次執行需要完成 Google 授權。
 
-Repo manifest 目前為 `USER_DEPLOYING` 與 `ANYONE_ANONYMOUS`，表示以部署者身分執行、允許匿名存取。自行重現時應確認實際部署設定符合使用對象；專案 Token 連結不是完整的帳號與角色權限系統。
+Repo manifest 目前為 `USER_DEPLOYING` 與 `ANYONE_ANONYMOUS`，指定以部署者身分執行、允許匿名存取；實際存取方式仍需核對部署設定。此設定適合隔離的虛構資料展示。持有有效專案 Token 的訪客可查看與修改對應專案，專案 Token 不是帳號登入或角色權限。
 
 ### 5. 建立示範專案
 
@@ -164,6 +164,8 @@ Repo manifest 目前為 `USER_DEPLOYING` 與 `ANYONE_ANONYMOUS`，表示以部�
 
 - 輸入資料與通知狀態由管理者透過試算表維護。
 - Web App 以專案 Token 對應資料，未提供完整帳號、角色權限及多使用者並行控制。
+- 有效專案頁面會提供整份員工主檔的姓名、單位與職稱選單，並顯示 Owner／組員的信箱；示範試算表的整份主檔都應使用虛構資料。
+- 部分後端入口尚缺少充分授權檢查，例如 `addNewEmployeeMaster()` 不檢查專案 Token、`updateSingleField()` 未限制可修改的欄位，既有任務更新也未核對任務是否屬於該 Token 的專案。正式使用前需補齊伺服器端授權。
 - 上傳介面目前限制每次最多 5 個檔案、總容量 20 MB；這是前端檢查，後端未提供同等限制。
 - 適合以獨立測試資料重現概念流程；正式業務環境需另外完善授權、資料驗證與操作管理。
 
