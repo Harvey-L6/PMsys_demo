@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+      .header-card { background: linear-gradient(135deg, #1a73e8, #4285f4); color: white; }
+      .readonly-label { font-size: 0.85em; color: #6c757d; margin-bottom: 4px; font-weight: 600; }
+      .readonly-value { font-weight: 500; color: #333; margin-bottom: 15px; white-space: pre-wrap; word-break: break-all;}
+      .history-box { background-color: #f1f3f4; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0; font-size: 0.95em; }
+      .edit-btn { font-size: 0.75rem; padding: 0.1rem 0.5rem; }
+      .task-card { border-left: 4px solid #4285f4; transition: transform 0.2s; }
+      .task-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+      .nav-tabs .nav-link { font-weight: bold; color: #6c757d; }
+      .nav-tabs .nav-link.active { color: #1a73e8; border-bottom: 3px solid #1a73e8; }
+      .member-item { border-left: 4px solid #34a853; background-color: white; border-radius: 6px; padding: 10px 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      .owner-item { border-left: 4px solid #fbbc04; background-color: #fff9e6; }
+    </style>
+  </head>
+  <body>
+    <datalist id="projectTeamList">
+      <? if (data['Owner (一級主管指派)']) { ?>
+        <option value="<?= data['Owner (一級主管指派)'] ?>">
+      <? } ?>
+      <? for (let i = 0; i < teamMembers.length; i++) { ?>
+        <option value="<?= teamMembers[i] ?>">
+      <? } ?>
+    </datalist>
+
+    <div class="container py-4">
+      
+      <ul class="nav nav-tabs mb-4" id="projectTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">📊 專案總覽</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">📋 任務牆</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="roster-tab" data-bs-toggle="tab" data-bs-target="#roster" type="button" role="tab">👥 組員清冊</button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="projectTabsContent">
+        
+        <!-- ============================================== -->
+        <!-- Tab 1: 專案總覽                                  -->
+        <!-- ============================================== -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header header-card py-3">
+              <h4 class="mb-0">[<?= data['專案編號'] ?>] <?= data['專案名稱'] ?></h4>
+            </div>
+            <div class="card-body bg-white">
+              <div class="row">
+                <div class="col-md-3"><div class="readonly-label">需求提出者</div><div class="readonly-value"><?= data['需求提出者'] || '無' ?></div></div>
+                <div class="col-md-3"><div class="readonly-label">負責人 (Owner)</div><div class="readonly-value"><?= data['Owner (一級主管指派)'] || '無' ?></div></div>
+                <div class="col-md-3"><div class="readonly-label">進度狀態</div><div class="readonly-value"><span class="badge bg-secondary"><?= data['進度狀態'] || '未定' ?></span></div></div>
+                <div class="col-md-3"><div class="readonly-label">專案續行評估</div><div class="readonly-value"><span class="badge bg-secondary"><?= data['專案續行評估'] || '未定' ?></span></div></div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-3"><div class="readonly-label">專案開始日期</div><div class="readonly-value"><?= data['專案開始日期'] || '無' ?></div></div>
+                <div class="col-md-3">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="readonly-label mb-0">預期 Deadline</div>
+                    <button class="btn btn-outline-secondary edit-btn" onclick="toggleEdit('deadline')">✎ 修改</button>
+                  </div>
+                  <div id="view-deadline" class="readonly-value"><?= data['預期Deadline'] || '無' ?></div>
+                  <div id="edit-deadline" class="d-none mb-3">
+                    <input type="text" class="form-control form-control-sm mb-2" id="input-deadline" value="<?= data['預期Deadline'] ?>" placeholder="例如: 2027/03/30">
+                    <button class="btn btn-sm btn-success" onclick="saveField('deadline', '預期Deadline', this)">儲存</button><button class="btn btn-sm btn-light ms-1" onclick="toggleEdit('deadline')">取消</button>
+                  </div>
+                </div>
+                <div class="col-md-3"><div class="readonly-label">實際完成時間</div><div class="readonly-value"><?= data['實際完成時間'] || '無' ?></div></div>
+                <div class="col-md-3"><div class="readonly-label">回報 Deadline</div><div class="readonly-value text-danger fw-bold"><?= data['回報Deadline'] || '無' ?></div></div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-3"><div class="readonly-label">下次進度報告日期</div><div class="readonly-value text-primary fw-bold"><?= data['下次進度報告日期'] || '無' ?></div></div>
+              </div>
+              <hr>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="readonly-label mb-0">預期效益 (目的)</div><button class="btn btn-outline-secondary edit-btn" onclick="toggleEdit('purpose')">✎ 修改</button>
+                  </div>
+                  <div id="view-purpose" class="readonly-value"><?= data['預期效益(目的)'] || '無' ?></div>
+                  <div id="edit-purpose" class="d-none mb-3">
+                    <textarea class="form-control form-control-sm mb-2" id="input-purpose" rows="3"><?= data['預期效益(目的)'] ?></textarea>
+                    <button class="btn btn-sm btn-success" onclick="saveField('purpose', '預期效益(目的)', this)">儲存</button><button class="btn btn-sm btn-light ms-1" onclick="toggleEdit('purpose')">取消</button>
+                  </div>
+                  
+                  <div class="d-flex justify-content-between align-items-center mb-1 mt-2">
+                    <div class="readonly-label mb-0">驗收標準</div><button class="btn btn-outline-secondary edit-btn" onclick="toggleEdit('acceptance')">✎ 修改</button>
+                  </div>
+                  <div id="view-acceptance" class="readonly-value"><?= data['驗收標準'] || '無' ?></div>
+                  <div id="edit-acceptance" class="d-none mb-3">
+                    <textarea class="form-control form-control-sm mb-2" id="input-acceptance" rows="3"><?= data['驗收標準'] ?></textarea>
+                    <button class="btn btn-sm btn-success" onclick="saveField('acceptance', '驗收標準', this)">儲存</button><button class="btn btn-sm btn-light ms-1" onclick="toggleEdit('acceptance')">取消</button>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="readonly-label mb-0">ROI</div><button class="btn btn-outline-secondary edit-btn" onclick="toggleEdit('roi')">✎ 修改</button>
+                  </div>
+                  <div id="view-roi" class="readonly-value"><?= data['ROI'] || '無' ?></div>
+                  <div id="edit-roi" class="d-none mb-3">
+                    <textarea class="form-control form-control-sm mb-2" id="input-roi" rows="3"><?= data['ROI'] ?></textarea>
+                    <button class="btn btn-sm btn-success" onclick="saveField('roi', 'ROI', this)">儲存</button><button class="btn btn-sm btn-light ms-1" onclick="toggleEdit('roi')">取消</button>
+                  </div>
+                  
+                  <!-- 👇 已全面更新為 Milestone(里程碑) -->
+                  <div class="d-flex justify-content-between align-items-center mb-1 mt-2">
+                    <div class="readonly-label mb-0">Milestone(里程碑)</div><button class="btn btn-outline-secondary edit-btn" onclick="toggleEdit('milestone')">✎ 修改</button>
+                  </div>
+                  <div id="view-milestone" class="readonly-value"><?= data['Milestone(里程碑)'] || '無' ?></div>
+                  <div id="edit-milestone" class="d-none mb-3">
+                    <textarea class="form-control form-control-sm mb-2" id="input-milestone" rows="3"><?= data['Milestone(里程碑)'] ?></textarea>
+                    <button class="btn btn-sm btn-success" onclick="saveField('milestone', 'Milestone(里程碑)', this)">儲存</button><button class="btn btn-sm btn-light ms-1" onclick="toggleEdit('milestone')">取消</button>
+                  </div>
+                </div>
+              </div>
+              
+              <? if(data['雲端資料夾連結']) { ?>
+              <div class="mt-2 mb-3"><a href="<?= data['雲端資料夾連結'] ?>" target="_blank" class="btn btn-outline-primary btn-sm">📁 開啟專案資料夾</a></div>
+              <? } ?>
+
+              <div class="mt-4 pt-3 border-top">
+                <h6 class="fw-bold text-primary mb-3">🕒 上一次的回報紀錄 (<span id="lastUpdateDate"><?= data['最新更新日期'] || '無日期' ?></span>)</h6>
+                <div class="readonly-label">上一次的最新進度</div><div id="view-lastProgress" class="readonly-value history-box"><?= data['最新進度回報'] || '尚無紀錄' ?></div>
+                <div class="readonly-label">上一次的下一步 Action</div><div id="view-lastNextAction" class="readonly-value history-box"><?= data['下一步Action'] || '尚無紀錄' ?></div>
+                <div class="readonly-label">上一次附上的檔案連結</div>
+                <div id="view-lastFileLink" class="readonly-value">
+                  <? if(data['檔案連結(選填)']) { 
+                     var links = data['檔案連結(選填)'].split('\n');
+                     for(var i=0; i<links.length; i++) {
+                       if(links[i].trim() !== '') { ?>
+                         <a href="<?= links[i] ?>" target="_blank" class="d-block text-truncate"><?= links[i] ?></a>
+                  <?   } 
+                     } 
+                  } else { ?>
+                    尚無連結
+                  <? } ?>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">📝 填寫本次專案進度</h5>
+            </div>
+            <div class="card-body">
+              <form id="updateForm">
+                <input type="hidden" id="token" name="token" value="<?= token ?>">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">最新進度回報 <span class="text-danger">*</span></label>
+                  <textarea class="form-control" id="progress" rows="4" required placeholder="請在此輸入「本次」的最新進度..."></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">下一步 Action <span class="text-danger">*</span></label>
+                  <textarea class="form-control" id="nextAction" rows="3" required placeholder="請在此輸入接下來的 Action..."></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">附件上傳 (選填，最多 5 個檔案，總容量 20MB 以內)</label>
+                  <input type="file" class="form-control" id="fileUpload" multiple>
+                  <div class="form-text">檔案將自動歸檔至專案資料夾。若未選擇檔案，將自動清空本次回報的檔案紀錄。</div>
+                </div>
+                <div class="d-grid gap-2 mt-4">
+                  <button type="button" class="btn btn-success btn-lg" id="submitBtn" onclick="submitForm()">📤 送出本次更新</button>
+                </div>
+                <div id="message" class="mt-3 text-center fw-bold"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- Tab 2: 任務牆區塊                                 -->
+        <!-- ============================================== -->
+        <div class="tab-pane fade" id="tasks" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0 text-dark fw-bold">專案任務清單</h4>
+            <button class="btn btn-primary" onclick="openTaskModal()">＋ 新增任務</button>
+          </div>
+          
+          <ul class="nav nav-pills mb-3" id="taskSubTabs" role="tablist">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="active-tasks-tab" data-bs-toggle="pill" data-bs-target="#active-tasks" type="button" role="tab">🏃‍♂️ 進行中任務</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="completed-tasks-tab" data-bs-toggle="pill" data-bs-target="#completed-tasks" type="button" role="tab">✅ 已完成任務</button></li>
+          </ul>
+
+          <div class="tab-content" id="taskSubTabsContent">
+            <div class="tab-pane fade show active" id="active-tasks" role="tabpanel">
+              <? 
+                let activeTasks = tasks.filter(t => t['狀態'] !== '已完成');
+                if (activeTasks.length === 0) { 
+              ?>
+                <div class="alert alert-light text-center border mt-3 text-muted">目前沒有進行中的任務。</div>
+              <? } else { 
+                  for (let i = 0; i < activeTasks.length; i++) { 
+                    let t = activeTasks[i];
+                    let badgeColor = 'bg-secondary';
+                    if (t['狀態'] === '進行中') badgeColor = 'bg-warning text-dark';
+                    if (t['狀態'] === '卡關') badgeColor = 'bg-danger';
+              ?>
+                <div class="card shadow-sm mb-3 task-card">
+                  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-primary"># <?= t['任務編號'] ?></span>
+                    <span class="badge <?= badgeColor ?>"><?= t['狀態'] || '未開始' ?></span>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6 border-end">
+                        <div class="text-muted small mb-1 fw-bold">任務內容</div>
+                        <div class="readonly-value mb-0"><?= t['任務內容'] || '無內容' ?></div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="text-muted small mb-1 fw-bold">任務進度回報</div>
+                        <div class="readonly-value mb-0 text-secondary"><?= t['任務進度回報'] || '尚無回報' ?></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 👇 任務卡片新增顯示 預期Deadline -->
+                  <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      👤 負責人：<b><?= t['Owner'] || '未指定' ?></b> | 📅 建立：<?= t['建立日期'] || '-' ?> | 🎯 預期完成：<?= t['預期Deadline'] || '-' ?> | 🏁 實際完成：<?= t['完成日期'] || '-' ?> | 🕒 最後編輯：<span class="text-primary fw-bold"><?= t['最後編輯日期'] || '-' ?></span>
+                    </small>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="openTaskModal({
+                      id: '<?= t['任務編號'] ?>', owner: '<?= t['Owner'] ?>', content: '<?= t['任務內容'].replace(/\n/g, '\\n') ?>', status: '<?= t['狀態'] ?>', progress: '<?= t['任務進度回報'].replace(/\n/g, '\\n') ?>', expectedDeadline: '<?= t['預期Deadline'] ?>', finishDate: '<?= t['完成日期'] ?>'
+                    })">✎ 編輯任務</button>
+                  </div>
+                </div>
+              <? } } ?>
+            </div>
+
+            <div class="tab-pane fade" id="completed-tasks" role="tabpanel">
+              <? 
+                let completedTasks = tasks.filter(t => t['狀態'] === '已完成');
+                if (completedTasks.length === 0) { 
+              ?>
+                <div class="alert alert-light text-center border mt-3 text-muted">目前沒有已完成的任務。</div>
+              <? } else { 
+                  for (let i = 0; i < completedTasks.length; i++) { 
+                    let t = completedTasks[i];
+              ?>
+                <div class="card shadow-sm mb-3 task-card border-success" style="opacity: 0.85;">
+                  <div class="card-header bg-white d-flex justify-content-between align-items-center border-success">
+                    <span class="fw-bold text-success"># <?= t['任務編號'] ?></span>
+                    <span class="badge bg-success"><?= t['狀態'] ?></span>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6 border-end">
+                        <div class="text-muted small mb-1 fw-bold">任務內容</div>
+                        <div class="readonly-value mb-0 text-muted" style="text-decoration: line-through;"><?= t['任務內容'] || '無內容' ?></div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="text-muted small mb-1 fw-bold">任務進度回報</div>
+                        <div class="readonly-value mb-0 text-secondary"><?= t['任務進度回報'] || '尚無回報' ?></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 👇 任務卡片新增顯示 預期Deadline -->
+                  <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      👤 負責人：<b><?= t['Owner'] || '未指定' ?></b> | 📅 建立：<?= t['建立日期'] || '-' ?> | 🎯 預期完成：<?= t['預期Deadline'] || '-' ?> | 🏁 實際完成：<?= t['完成日期'] || '-' ?> | 🕒 最後編輯：<span class="text-success fw-bold"><?= t['最後編輯日期'] || '-' ?></span>
+                    </small>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="openTaskModal({
+                      id: '<?= t['任務編號'] ?>', owner: '<?= t['Owner'] ?>', content: '<?= t['任務內容'].replace(/\n/g, '\\n') ?>', status: '<?= t['狀態'] ?>', progress: '<?= t['任務進度回報'].replace(/\n/g, '\\n') ?>', expectedDeadline: '<?= t['預期Deadline'] ?>', finishDate: '<?= t['完成日期'] ?>'
+                    })">✎ 檢視/編輯</button>
+                  </div>
+                </div>
+              <? } } ?>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- Tab 3: 組員清冊                                  -->
+        <!-- ============================================== -->
+        <div class="tab-pane fade" id="roster" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0 text-dark fw-bold">專案組織架構</h4>
+            <button class="btn btn-success" onclick="openAddMemberModal()">＋ 新增組員</button>
+          </div>
+
+          <h6 class="text-muted fw-bold mt-4 mb-2">👑 專案 Owner (一級主管指派)</h6>
+          <? 
+            let ownerName = data['Owner (一級主管指派)'];
+            let ownerInfo = employees[ownerName] || { title: '無資料', dept: '無資料', email: '無' };
+          ?>
+          <div class="member-item owner-item shadow-sm">
+            <div>
+              <div class="fw-bold fs-5 text-dark"><?= ownerName || '尚未指派' ?></div>
+              <? if (ownerName) { ?>
+                <div class="small text-muted mt-1">
+                  🏢 <?= ownerInfo.dept ?> - <?= ownerInfo.title ?> | ✉️ <?= ownerInfo.email ?>
+                </div>
+              <? } ?>
+            </div>
+            <div><span class="badge bg-warning text-dark">專案負責人</span></div>
+          </div>
+
+          <h6 class="text-muted fw-bold mt-4 mb-2">👥 專案組員</h6>
+          <div id="teamContainer">
+            <? if (teamMembers.length === 0) { ?>
+              <div class="alert alert-light text-center border text-muted">尚未新增任何組員。</div>
+            <? } else { 
+                for (let i = 0; i < teamMembers.length; i++) { 
+                  let mName = teamMembers[i];
+                  let mInfo = employees[mName] || { title: '無資料', dept: '無資料', email: '無' };
+            ?>
+              <div class="member-item shadow-sm">
+                <div>
+                  <div class="fw-bold fs-6 text-dark"><?= mName ?></div>
+                  <div class="small text-muted mt-1">
+                    🏢 <?= mInfo.dept ?> - <?= mInfo.title ?> | ✉️ <?= mInfo.email ?>
+                  </div>
+                </div>
+                <!-- 👇 修改：傳遞 this 給 confirmRemoveMember -->
+                <button class="btn btn-sm btn-outline-danger" onclick="confirmRemoveMember('<?= mName ?>', this)">🗑️ 刪除</button>
+              </div>
+            <? } } ?>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- Modal: 新增/編輯 任務                             -->
+    <!-- ============================================== -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title fw-bold" id="taskModalTitle">新增/編輯任務</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="taskForm">
+              <input type="hidden" id="modalTaskId">
+              
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">負責人 (Owner)</label>
+                  <input type="text" class="form-control" id="modalTaskOwner" list="projectTeamList" placeholder="請選擇或輸入負責人姓名">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">狀態</label>
+                  <select class="form-select" id="modalTaskStatus">
+                    <option value="未開始">未開始</option>
+                    <option value="進行中">進行中</option>
+                    <option value="卡關">卡關</option>
+                    <option value="已完成">已完成</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">任務內容 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="modalTaskContent" rows="3" required placeholder="具體敘述此任務的要求與細節..."></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">任務進度回報</label>
+                <textarea class="form-control bg-light" id="modalTaskProgress" rows="3" placeholder="回報目前的執行進度..."></textarea>
+              </div>
+              
+              <!-- 👇 新增預期Deadline欄位，保持與實際完成日期並排 -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">預期Deadline</label>
+                  <input type="date" class="form-control" id="modalTaskExpectedDeadline">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">實際完成日期</label>
+                  <input type="date" class="form-control" id="modalTaskFinishDate">
+                </div>
+              </div>
+
+            </form>
+            <div id="modalTaskMessage" class="mt-2 fw-bold text-center"></div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-success" id="btnSaveTask" onclick="submitTaskModal()">💾 儲存任務</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- Modal: 新增組員                                  -->
+    <!-- ============================================== -->
+    <div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title fw-bold">➕ 加入專案組員</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">選擇員工 (可輸入關鍵字搜尋) <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="newMemberName" list="allEmployeesList" placeholder="請從員工主檔中選擇...">
+              <datalist id="allEmployeesList">
+                <? for(var empName in employees) { ?>
+                  <option value="<?= empName ?>"><?= employees[empName].dept ?> - <?= employees[empName].title ?></option>
+                <? } ?>
+              </datalist>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top text-center">
+              <span class="text-muted small">找不到該名員工嗎？</span>
+              <button class="btn btn-sm btn-outline-primary ms-2" onclick="openAddEmployeeModal()">✨ 新增員工至主檔</button>
+            </div>
+            <div id="memberModalMessage" class="mt-3 fw-bold text-center"></div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-success" id="btnSaveMember" onclick="submitAddMember()">加入組員</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- Modal: 新增員工至主檔                             -->
+    <!-- ============================================== -->
+    <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+      <div class="modal-dialog">
+        <div class="modal-content border-primary">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title fw-bold">✨ 新增員工至主檔</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning small mb-3">
+              ⚠️ 注意：一旦建立後，只能由系統管理員於後台 Google Sheet 修改資料。請確認輸入無誤。
+            </div>
+            <form id="addEmployeeForm">
+              <div class="mb-3">
+                <label class="form-label fw-bold">姓名 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="empName" required placeholder="必填，請輸入全名">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">單位</label>
+                <input type="text" class="form-control" id="empDept" placeholder="選填，例如：永續發展">
+              </div>
+              <div class="row mb-3">
+                <div class="col-6">
+                  <label class="form-label fw-bold">職稱</label>
+                  <input type="text" class="form-control" id="empTitle" placeholder="選填，例如：工程師">
+                </div>
+                <div class="col-6">
+                  <label class="form-label fw-bold">Email</label>
+                  <input type="email" class="form-control" id="empEmail" placeholder="選填">
+                </div>
+              </div>
+            </form>
+            <div id="empModalMessage" class="mt-2 fw-bold text-center"></div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" onclick="backToAddMemberModal()">返回</button>
+            <button type="button" class="btn btn-primary" id="btnSaveEmployee" onclick="submitAddEmployee()">寫入主檔</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 載入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      const validEmployees = <?= JSON.stringify(Object.keys(employees)) ?>;
+
+      document.addEventListener("DOMContentLoaded", function() {
+        const initialTab = "<?= activeTab ?>";
+        if (initialTab === 'tasks') new bootstrap.Tab(document.getElementById('tasks-tab')).show();
+        else if (initialTab === 'roster') new bootstrap.Tab(document.getElementById('roster-tab')).show();
+      });
+
+      function toggleEdit(fieldId) { const viewDiv = document.getElementById('view-' + fieldId); const editDiv = document.getElementById('edit-' + fieldId); if(viewDiv.classList.contains('d-none')) { viewDiv.classList.remove('d-none'); editDiv.classList.add('d-none'); } else { viewDiv.classList.add('d-none'); editDiv.classList.remove('d-none'); } }
+      function saveField(fieldId, columnName, btnElement) { const token = document.getElementById('token').value; const newValue = document.getElementById('input-' + fieldId).value; const originalText = btnElement.innerHTML; btnElement.innerHTML = '儲存中...'; btnElement.disabled = true; google.script.run.withSuccessHandler(function(response) { btnElement.innerHTML = originalText; btnElement.disabled = false; if(response.success) { document.getElementById('view-' + fieldId).innerText = newValue; toggleEdit(fieldId); } else { alert('儲存失敗：' + response.message); } }).withFailureHandler(function(error) { btnElement.innerHTML = originalText; btnElement.disabled = false; alert('系統連線發生錯誤，請稍後再試。'); }).updateSingleField(token, columnName, newValue); }
+      function readFileAsBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); reader.readAsDataURL(file); }); }
+      
+      async function submitForm() {
+        const btn = document.getElementById('submitBtn'); const msgDiv = document.getElementById('message');
+        const progress = document.getElementById('progress').value; const nextAction = document.getElementById('nextAction').value; const token = document.getElementById('token').value; const fileInput = document.getElementById('fileUpload');
+        if(!progress.trim() || !nextAction.trim()) { msgDiv.innerHTML = '<span class="text-danger">⚠️ 錯誤：「最新進度回報」與「下一步 Action」不可為空！</span>'; return; }
+        const files = fileInput.files;
+        if (files.length > 5) { msgDiv.innerHTML = '<span class="text-danger">⚠️ 錯誤：最多只能上傳 5 個檔案！</span>'; return; }
+        let totalSize = 0; for (let i = 0; i < files.length; i++) totalSize += files[i].size;
+        if (totalSize > 20 * 1024 * 1024) { msgDiv.innerHTML = '<span class="text-danger">⚠️ 錯誤：檔案總容量不可超過 20MB！</span>'; return; }
+        btn.disabled = true; btn.innerHTML = '⏳ 處理中(包含上傳檔案)，請稍候...'; msgDiv.innerHTML = '';
+        const fileArray = [];
+        try { for (let i = 0; i < files.length; i++) { const base64Data = await readFileAsBase64(files[i]); const base64Content = base64Data.split(',')[1]; fileArray.push({ name: files[i].name, mimeType: files[i].type, base64: base64Content }); } } 
+        catch (e) { msgDiv.innerHTML = '<span class="text-danger">❌ 讀取檔案失敗。</span>'; btn.disabled = false; btn.innerHTML = '📤 送出本次更新'; return; }
+        const formData = { token: token, progress: progress, nextAction: nextAction, files: fileArray };
+        google.script.run.withSuccessHandler(function(response) {
+            btn.disabled = false; btn.innerHTML = '📤 送出本次更新';
+            if(response.success) {
+              msgDiv.innerHTML = '<span class="text-success">🎉 ' + response.message + '</span>';
+              document.getElementById('view-lastProgress').innerText = progress; document.getElementById('view-lastNextAction').innerText = nextAction;
+              const linkContainer = document.getElementById('view-lastFileLink');
+              if (response.finalFileLinks && response.finalFileLinks.length > 0) { let htmlStr = ''; response.finalFileLinks.forEach(link => { htmlStr += `<a href="${link}" target="_blank" class="d-block text-truncate">${link}</a>`; }); linkContainer.innerHTML = htmlStr; } else { linkContainer.innerText = '尚無連結'; }
+              const now = new Date(); const formattedNow = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+              document.getElementById('lastUpdateDate').innerText = formattedNow; document.getElementById('updateForm').reset(); 
+            } else { msgDiv.innerHTML = '<span class="text-danger">❌ ' + response.message + '</span>'; }
+          }).withFailureHandler(function(error) { btn.disabled = false; btn.innerHTML = '📤 送出本次更新'; msgDiv.innerHTML = '<span class="text-danger">❌ 系統連線發生錯誤，請稍後再試。</span>'; }).submitProjectUpdate(formData);
+      }
+
+      // ==============================================
+      // 任務牆專用 JS 邏輯
+      // ==============================================
+      let taskModalInstance = null;
+      function openTaskModal(taskObj = null) {
+        if (!taskModalInstance) taskModalInstance = new bootstrap.Modal(document.getElementById('taskModal'));
+        document.getElementById('modalTaskMessage').innerHTML = '';
+        
+        // 👇 重置按鈕狀態，避免上次點擊後卡在重新整理
+        const btn = document.getElementById('btnSaveTask');
+        btn.innerHTML = '💾 儲存任務';
+        btn.className = 'btn btn-success';
+        btn.onclick = submitTaskModal;
+        btn.disabled = false;
+
+        if (taskObj) {
+          document.getElementById('taskModalTitle').innerText = `編輯任務 [${taskObj.id}]`;
+          document.getElementById('modalTaskId').value = taskObj.id; document.getElementById('modalTaskOwner').value = taskObj.owner;
+          document.getElementById('modalTaskContent').value = taskObj.content; document.getElementById('modalTaskStatus').value = taskObj.status || '未開始';
+          document.getElementById('modalTaskProgress').value = taskObj.progress; 
+          document.getElementById('modalTaskExpectedDeadline').value = taskObj.expectedDeadline || '';
+          document.getElementById('modalTaskFinishDate').value = taskObj.finishDate;
+        } else {
+          document.getElementById('taskModalTitle').innerText = '✨ 新增專案任務';
+          document.getElementById('taskForm').reset(); document.getElementById('modalTaskId').value = ''; document.getElementById('modalTaskStatus').value = '未開始';
+        }
+        taskModalInstance.show();
+      }
+      
+      function submitTaskModal() {
+        const btn = document.getElementById('btnSaveTask'); const msgDiv = document.getElementById('modalTaskMessage');
+        const token = document.getElementById('token').value; const content = document.getElementById('modalTaskContent').value.trim();
+        if (!content) { msgDiv.innerHTML = '<span class="text-danger">⚠️ 「任務內容」為必填欄位！</span>'; return; }
+        
+        const taskData = { 
+          taskId: document.getElementById('modalTaskId').value, 
+          owner: document.getElementById('modalTaskOwner').value.trim(), 
+          content: content, 
+          status: document.getElementById('modalTaskStatus').value, 
+          progress: document.getElementById('modalTaskProgress').value.trim(), 
+          expectedDeadline: document.getElementById('modalTaskExpectedDeadline').value,
+          finishDate: document.getElementById('modalTaskFinishDate').value 
+        };
+        
+        btn.disabled = true; btn.innerHTML = '⏳ 儲存中...'; msgDiv.innerHTML = '';
+        google.script.run.withSuccessHandler(function(response) {
+            if(response.success) {
+              msgDiv.innerHTML = '<span class="text-success">🎉 ' + response.message + '</span>';
+              
+              // 👇 修改：綁定全新的點擊動作以繞過瀏覽器限制
+              btn.innerHTML = '🔄 點擊這裡重新整理畫面';
+              btn.classList.remove('btn-success');
+              btn.classList.add('btn-primary');
+              btn.disabled = false;
+              btn.onclick = function() {
+                  window.top.location.href = "<?= scriptUrl ?>?token=" + token + "&tab=tasks";
+              };
+            } else { btn.disabled = false; btn.innerHTML = '💾 儲存任務'; msgDiv.innerHTML = '<span class="text-danger">❌ ' + response.message + '</span>'; }
+          }).withFailureHandler(function(error) { btn.disabled = false; btn.innerHTML = '💾 儲存任務'; msgDiv.innerHTML = '<span class="text-danger">❌ 系統連線發生錯誤。</span>'; }).saveTask(token, taskData);
+      }
+
+      // ==============================================
+      // 組員清冊與員工主檔 JS 邏輯
+      // ==============================================
+      let addMemberModalInstance = null;
+      let addEmployeeModalInstance = null;
+
+      function openAddMemberModal() {
+        if (!addMemberModalInstance) addMemberModalInstance = new bootstrap.Modal(document.getElementById('addMemberModal'));
+        document.getElementById('newMemberName').value = '';
+        document.getElementById('memberModalMessage').innerHTML = '';
+        
+        // 👇 重置按鈕狀態
+        const btn = document.getElementById('btnSaveMember');
+        btn.innerHTML = '加入組員';
+        btn.className = 'btn btn-success';
+        btn.onclick = submitAddMember;
+        btn.disabled = false;
+
+        addMemberModalInstance.show();
+      }
+
+      function submitAddMember() {
+        const btn = document.getElementById('btnSaveMember');
+        const msgDiv = document.getElementById('memberModalMessage');
+        const token = document.getElementById('token').value;
+        const memberName = document.getElementById('newMemberName').value.trim();
+        
+        if (!memberName) { msgDiv.innerHTML = '<span class="text-danger">⚠️ 請輸入或選擇要加入的人員姓名！</span>'; return; }
+
+        if (!validEmployees.includes(memberName)) {
+          msgDiv.innerHTML = '<span class="text-danger">⚠️ 找不到該名員工！請確認輸入正確，或先點擊下方「新增員工至主檔」。</span>';
+          return;
+        }
+
+        btn.disabled = true; btn.innerHTML = '⏳ 處理中...'; msgDiv.innerHTML = '';
+        google.script.run.withSuccessHandler(function(response) {
+            if(response.success) {
+              msgDiv.innerHTML = '<span class="text-success">🎉 ' + response.message + '</span>';
+              
+              // 👇 修改：綁定全新的點擊動作
+              btn.innerHTML = '🔄 點擊這裡重新整理畫面';
+              btn.classList.remove('btn-success');
+              btn.classList.add('btn-primary');
+              btn.disabled = false;
+              btn.onclick = function() {
+                  window.top.location.href = "<?= scriptUrl ?>?token=" + token + "&tab=roster";
+              };
+            } else {
+              btn.disabled = false; btn.innerHTML = '加入組員';
+              msgDiv.innerHTML = '<span class="text-danger">❌ ' + response.message + '</span>';
+            }
+          }).withFailureHandler(function(error) {
+            btn.disabled = false; btn.innerHTML = '加入組員';
+            msgDiv.innerHTML = '<span class="text-danger">❌ 系統連線發生錯誤。</span>';
+          }).addTeamMember(token, memberName);
+      }
+
+      function confirmRemoveMember(memberName, btnElement) {
+        if (!confirm(`確定要將 ${memberName} 從專案組員中刪除嗎？`)) return;
+        const token = document.getElementById('token').value;
+        
+        // 👇 讓剛點下的那顆按鈕變成 Loading 狀態
+        if(btnElement) {
+            btnElement.disabled = true;
+            btnElement.innerHTML = '處理中...';
+        }
+
+        google.script.run.withSuccessHandler(function(response) {
+            if(response.success) {
+              if(btnElement) {
+                  // 👇 修改：綁定全新的點擊動作
+                  btnElement.innerHTML = '🔄 點擊重新整理';
+                  btnElement.className = 'btn btn-sm btn-primary';
+                  btnElement.disabled = false;
+                  btnElement.onclick = function() {
+                      window.top.location.href = "<?= scriptUrl ?>?token=" + token + "&tab=roster";
+                  };
+              } else {
+                  window.top.location.href = "<?= scriptUrl ?>?token=" + token + "&tab=roster";
+              }
+            } 
+            else { 
+              alert('刪除失敗：' + response.message); 
+              if(btnElement) { btnElement.innerHTML = '🗑️ 刪除'; btnElement.disabled = false; }
+            }
+          }).withFailureHandler(function(error) { 
+              alert('系統連線發生錯誤。'); 
+              if(btnElement) { btnElement.innerHTML = '🗑️ 刪除'; btnElement.disabled = false; }
+          }).removeTeamMember(token, memberName);
+      }
+
+      function openAddEmployeeModal() {
+        addMemberModalInstance.hide();
+        if (!addEmployeeModalInstance) addEmployeeModalInstance = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
+        document.getElementById('addEmployeeForm').reset();
+        document.getElementById('empModalMessage').innerHTML = '';
+
+        // 👇 重置按鈕狀態
+        const btn = document.getElementById('btnSaveEmployee');
+        btn.innerHTML = '寫入主檔';
+        btn.className = 'btn btn-primary';
+        btn.onclick = submitAddEmployee;
+        btn.disabled = false;
+
+        addEmployeeModalInstance.show();
+      }
+
+      function backToAddMemberModal() {
+        addEmployeeModalInstance.hide();
+        addMemberModalInstance.show();
+      }
+
+      function submitAddEmployee() {
+        const btn = document.getElementById('btnSaveEmployee');
+        const msgDiv = document.getElementById('empModalMessage');
+        const token = document.getElementById('token').value;
+        
+        const empName = document.getElementById('empName').value.trim();
+        if (!empName) { msgDiv.innerHTML = '<span class="text-danger">⚠️ 「姓名」為必填欄位！</span>'; return; }
+
+        const empData = {
+          name: empName,
+          dept: document.getElementById('empDept').value.trim(),
+          title: document.getElementById('empTitle').value.trim(),
+          email: document.getElementById('empEmail').value.trim()
+        };
+
+        btn.disabled = true; btn.innerHTML = '⏳ 寫入中...'; msgDiv.innerHTML = '';
+        google.script.run.withSuccessHandler(function(response) {
+            if(response.success) {
+              msgDiv.innerHTML = '<span class="text-success">🎉 ' + response.message + '</span>';
+              
+              // 👇 修改：綁定全新的點擊動作
+              btn.innerHTML = '🔄 點擊這裡重新整理畫面';
+              btn.classList.remove('btn-primary');
+              btn.classList.add('btn-success');
+              btn.disabled = false;
+              btn.onclick = function() {
+                  window.top.location.href = "<?= scriptUrl ?>?token=" + token + "&tab=roster";
+              };
+            } else {
+              btn.disabled = false; btn.innerHTML = '寫入主檔';
+              msgDiv.innerHTML = '<span class="text-danger">❌ ' + response.message + '</span>';
+            }
+          }).withFailureHandler(function(error) {
+            btn.disabled = false; btn.innerHTML = '寫入主檔';
+            msgDiv.innerHTML = '<span class="text-danger">❌ 系統連線發生錯誤。</span>';
+          }).addNewEmployeeMaster(empData);
+      }
+    </script>
+  </body>
+</html>
